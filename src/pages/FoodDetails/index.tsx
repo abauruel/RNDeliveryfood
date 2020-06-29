@@ -147,7 +147,8 @@ const FoodDetails: React.FC = () => {
       (total, extra) => total + extra.quantity * extra.value,
       0,
     );
-    const total = food.price + extraValues;
+
+    const total = Number(food.price) + extraValues;
 
     return formatValue(total * foodQuantity);
   }, [extras, food, foodQuantity]);
