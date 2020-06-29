@@ -35,6 +35,7 @@ interface Food {
   price: number;
   thumbnail_url: string;
   formattedPrice: string;
+  category: number;
 }
 
 interface Category {
@@ -44,6 +45,7 @@ interface Category {
 }
 
 const Dashboard: React.FC = () => {
+  const navigation = useNavigation();
   const [foods, setFoods] = useState<Food[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<
@@ -51,15 +53,64 @@ const Dashboard: React.FC = () => {
   >();
   const [searchValue, setSearchValue] = useState('');
 
-  const navigation = useNavigation();
+  const { navigate } = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
     // Navigate do ProductDetails page
+    navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
       // Load Foods from API
+
+      if (!selectedCategory && !searchValue) {
+        const response = await api.get<Food[]>('foods', {
+          params: {
+            name_like: '',
+          },
+        });
+        const foodResponse = response.data.map(food => {
+          return {
+            ...food,
+            formattedPrice: formatValue(food.price),
+          };
+        });
+
+        setFoods(foodResponse);
+      }
+
+      if (selectedCategory) {
+        const response = await api.get('foods', {
+          params: {
+            category_like: selectedCategory,
+          },
+        });
+        setFoods(
+          response.data.map(food => {
+            return {
+              ...food,
+              formattedPrice: formatValue(food.price),
+            };
+          }),
+        );
+      }
+
+      if (searchValue) {
+        const response = await api.get('foods', {
+          params: {
+            name_like: searchValue,
+          },
+        });
+        setFoods(
+          response.data.map(food => {
+            return {
+              ...food,
+              formattedPrice: formatValue(food.price),
+            };
+          }),
+        );
+      }
     }
 
     loadFoods();
@@ -67,14 +118,32 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get('categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
+  useEffect(() => {
+    api.get('foods').then(response => {
+      setFoods(
+        response.data.map(food => {
+          return {
+            ...food,
+            formattedPrice: formatValue(food.price),
+          };
+        }),
+      );
+    });
+  }, []);
   function handleSelectCategory(id: number): void {
-    // Select / deselect category
+    if (selectedCategory === id) {
+      setSelectedCategory(undefined);
+    } else {
+      setSelectedCategory(id);
+    }
   }
 
   return (
